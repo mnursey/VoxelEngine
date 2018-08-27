@@ -3,14 +3,26 @@
 void voxelEngine::ChunkManager::LoadChunk(int x, int y, int z)
 {
 	Chunk* newChunk = new Chunk(x, y ,z, seed, m_VoxelsLoadedPerFrame);
-	loadQueue.push_back(newChunk);
-	//std::cout << "Loading Chunk " << x << ":" << y << ":"<< z << std::endl;
+	managedChunks[std::to_string(x) + ":" + std::to_string(z)] = newChunk;
+	queueChunks.push_back(newChunk);
+	std::cout << "Loading Chunk " << x << ":" << y << ":"<< z << std::endl;
 }
 
-void voxelEngine::ChunkManager::UnLoadChunk(int activeChunkIndex)
+void voxelEngine::ChunkManager::UnLoadChunk(int x, int z)
 {
-	Chunk* temp = activeChunks[activeChunkIndex];
-	activeChunks.erase(activeChunks.begin() + activeChunkIndex);
+	Chunk* temp = managedChunks[std::to_string(x) + ":" + std::to_string(z)];
+
+	for (int i = 0; i < activeChunks.size(); i++)
+	{
+		if (temp == activeChunks[i])
+		{
+			activeChunks.erase(activeChunks.begin() + i);
+			break;
+		}
+	}
+
+	managedChunks.erase(managedChunks.find(std::to_string(x) + ":" + std::to_string(z)));
+
 	delete temp;
 }
 
@@ -27,134 +39,133 @@ void voxelEngine::ChunkManager::WordToVoxelPosition(float worldPos[], int* voxel
 }
 
 void voxelEngine::ChunkManager::Update(float viewPosition[])
-{
-	// FIX DOUBLE LOADING OF CHUNKS
-	// ADJUST SO CLOSEST CHUNKS ARE RENDERED FIRST
-	// ADJUST SO FAR CHUNKS IN QUEUE ARE NEVER LOADED
-
-	bool underChunk = false;
-	bool northChunk = false;
-	bool southChunk = false;
-	bool eastChunk = false;
-	bool westChunk = false;
-
-	
-	double offsetX = 8.0;
-	double offsetZ = 8.0;
+{	
+	double offsetX = voxelEngine::Chunk::s_SIZE / 2;
+	double offsetZ = voxelEngine::Chunk::s_SIZE / 2;
 	if (viewPosition[0] < 0)
 		offsetX *= -1.0;
 	if (viewPosition[2] < 0)
 		offsetZ *= -1.0;
-
+	
 	int cameraChunkPosition[3] = { (viewPosition[0] + offsetX) / voxelEngine::Chunk::s_SIZE, viewPosition[1] / voxelEngine::Chunk::s_HEIGHT, (viewPosition[2] + offsetZ) / voxelEngine::Chunk::s_SIZE };
-	//std::cout << cameraChunkPosition[0] << ":" << cameraChunkPosition[2] << std::endl;
+	int cameraDelta[3] = {m_prevCameraPosition[0] - cameraChunkPosition[0], m_prevCameraPosition[1] - cameraChunkPosition[1] , m_prevCameraPosition[2] - cameraChunkPosition[2]};
+	
+	m_prevCameraPosition[0] = cameraChunkPosition[0]; m_prevCameraPosition[1] = cameraChunkPosition[1]; m_prevCameraPosition[2] = cameraChunkPosition[2];
 
-	for (int i = 0; i < activeChunks.size(); i++)
+	if (cameraDelta[0] != 0 || cameraDelta[2] != 0 || firstRun)
 	{
-		int pos[3];
-		activeChunks[i]->GetPosition(pos);
-		int distance = std::abs(cameraChunkPosition[0] - pos[0]) + std::abs(cameraChunkPosition[2] - pos[2]);
-		if (distance > m_viewDistance + 1)
+		if (firstRun)
+			firstRun = false;
+
+		std::cout << "Camera Delta: " << cameraDelta[0] << ":" << cameraDelta[2] << std::endl;
+
+
+		for (int i = 0; i < activeChunks.size(); i++)
 		{
-			UnLoadChunk(i);
+			// check if chunk is too far from player
+			Chunk* temp = activeChunks[i];
+			int pos[3];
+			temp->GetPosition(pos);
+			int distance = std::abs(cameraChunkPosition[0] - pos[0]) + std::abs(cameraChunkPosition[2] - pos[2]);
+			// If farther then render distance + c then remove chunk
+
+			if (distance > m_viewDistance + 6)
+			{
+				UnLoadChunk(pos[0], pos[2]);
+			}
 		}
 
-		if (distance == 0)
-			underChunk = true;
+		for (int i = 0; i < queueChunks.size(); i++)
+		{
+			// check if chunk is too far from player
+			Chunk* temp = queueChunks[i];
+			int pos[3];
+			temp->GetPosition(pos);
+			int distance = std::abs(cameraChunkPosition[0] - pos[0]) + std::abs(cameraChunkPosition[2] - pos[2]);
 
-		if (cameraChunkPosition[0] == pos[0] && cameraChunkPosition[2] + 1 == pos[2])
-			northChunk = true;
+			// If farther then render distance + c then remove chunk
 
-		if (cameraChunkPosition[0] == pos[0] && cameraChunkPosition[2] - 1 == pos[2])
-			southChunk = true;
+			if (distance > m_viewDistance + 4)
+			{
+				managedChunks.erase(managedChunks.find(std::to_string(pos[0]) + ":" + std::to_string(pos[2])));
+				queueChunks.erase(queueChunks.begin() + i);
+				delete temp;
+			}
+		}
 
-		if (cameraChunkPosition[0] + 1 == pos[0] && cameraChunkPosition[2] == pos[2])
-			eastChunk = true;
+		for (int x = -m_viewDistance + m_viewDistance / 2; x < m_viewDistance / 2; x++)
+		{
+			for (int z = -m_viewDistance + m_viewDistance / 2; z < m_viewDistance / 2; z++)
+			{
+				int chunkX = cameraChunkPosition[0] + x;
+				int chunkZ = cameraChunkPosition[2] + z;
 
-		if (cameraChunkPosition[0] - 1 == pos[0] && cameraChunkPosition[2] == pos[2])
-			westChunk = true;
+				// SLOW
+				if (managedChunks.find(std::to_string(chunkX) + ":" + std::to_string(chunkZ)) != managedChunks.end())
+				{
+
+				}
+				else
+				{
+					// Chunk being managed
+
+					// Add to queue
+					LoadChunk(chunkX, 0, chunkZ);
+				}
+			}
+		}
 	}
 
-	for (int i = 0; i < loadQueue.size(); i++)
-	{
-		int pos[3];
-		loadQueue[i]->GetPosition(pos);
-		int distance = std::abs(cameraChunkPosition[0] - pos[0]) + std::abs(cameraChunkPosition[2] - pos[2]);
-
-		if (distance == 0)
-			underChunk = true;
-
-		if (cameraChunkPosition[0] == pos[0] && cameraChunkPosition[2] + 1 == pos[2])
-			northChunk = true;
-
-		if (cameraChunkPosition[0] == pos[0] && cameraChunkPosition[2] - 1 == pos[2])
-			southChunk = true;
-
-		if (cameraChunkPosition[0] + 1 == pos[0] && cameraChunkPosition[2] == pos[2])
-			eastChunk = true;
-
-		if (cameraChunkPosition[0] - 1 == pos[0] && cameraChunkPosition[2] == pos[2])
-			westChunk = true;
-	}
-
-	if (!underChunk)
-	{
-		LoadChunk(cameraChunkPosition[0], 0, cameraChunkPosition[2]);
-	}
-
-	if (!northChunk)
-	{
-		LoadChunk(cameraChunkPosition[0], 0, cameraChunkPosition[2] + 1);
-	}
-
-	if (!southChunk)
-	{
-		LoadChunk(cameraChunkPosition[0], 0, cameraChunkPosition[2] - 1);
-	}
-
-	if (!eastChunk)
-	{
-		LoadChunk(cameraChunkPosition[0] + 1, 0, cameraChunkPosition[2]);
-	}
-
-	if (!westChunk)
-	{
-		LoadChunk(cameraChunkPosition[0] - 1, 0, cameraChunkPosition[2]);
-	}
-
-	UpdateLoadQueue();
+	UpdateLoadQueue(cameraChunkPosition);
 
 }
 
-void voxelEngine::ChunkManager::UpdateLoadQueue()
+void voxelEngine::ChunkManager::UpdateLoadQueue(int cameraChunkPosition[])
 {
-	if (loadQueue.size() > 0)
+	if (queueChunks.size() > 0)
 	{
-		int r = loadQueue[0]->Build();
+		Chunk* temp = queueChunks[0];
+		int r = temp->Build();
+
 		if (r == 1)
 		{
-			activeChunks.push_back(loadQueue[0]);
-			loadQueue.erase(loadQueue.begin());
+			
+			int prevPos[3];
+			temp->GetPosition(prevPos);
+			std::cout << "Loaded Chunk " << prevPos[0] << ":" << prevPos[2] << std::endl;
+
+			activeChunks.push_back(temp);
+				
+			queueChunks.erase(queueChunks.begin());
 		}
 	}
 }
 
 voxelEngine::ChunkManager::ChunkManager()
 {
+	/*
 	for (int x = 0; x < m_viewDistance; x++)
 	{
 		for (int y = 0; y < m_viewDistance; y++)
 		{
 			LoadChunk(x - (m_viewDistance / 2), 0, y - (m_viewDistance / 2));
+			loadedChunks[x][y] = nullptr;
 		}
 	}
+	*/
 }
 
 voxelEngine::ChunkManager::~ChunkManager()
 {
 	for (int i = 0; i < activeChunks.size(); i++)
 	{
-		delete activeChunks[i];
+		Chunk* temp = activeChunks[i];
+		delete temp;
+	}
+
+	for (int i = 0; i < queueChunks.size(); i++)
+	{
+		Chunk* temp = queueChunks[i];
+		delete temp;
 	}
 }
-

@@ -8,27 +8,12 @@ namespace test {
 
 	TestVoxel::TestVoxel()
 	{
+		m_Running = true;
 		proj = glm::perspective(glm::radians(60.0f) , 960.0f / 540.0f, 0.1f, 10000.0f);
 
 		// Chunk
 
 		chunkManager = new voxelEngine::ChunkManager();
-
-		/* - PUT THIS PART INTO CHUNK OR CHUNK RENDERER 
-		float* chunkPositions = 0;
-		int chunkVertexCount = 0;
-
-		chunkVA = new VertexArray();
-
-		chunkVB = new VertexBuffer(chunkPositions, chunkVertexCount * 10 *  sizeof(float));
-
-		chunkLayout = new VertexBufferLayout();
-		chunkLayout->Push<float>(3);
-		chunkLayout->Push<float>(4);
-		chunkLayout->Push<float>(3);
-		chunkVA->AddBuffer(*chunkVB, *chunkLayout);
-		 --- */
-
 
 		chunkShader = new Shader("res/shaders/voxel.shader");
 		chunkShader->Bind();
@@ -47,10 +32,16 @@ namespace test {
 		lightingShader->Bind();
 
 		renderer = new Renderer();
+
+		// World Thread
+
+		//worldThread = CreateUpdateWorldThread();
 	}
 
 	TestVoxel::~TestVoxel()
 	{
+		m_Running = false;
+
 		delete renderer;
 
 		delete chunkShader;
@@ -65,6 +56,14 @@ namespace test {
 		delete inputManager;
 
 		delete chunkManager;
+	}
+
+	void TestVoxel::UpdateWorld()
+	{
+		glm::vec3 pP = camera.GetPosition();
+		float playerPosition[3] = { pP[0], pP[1], pP[2] };
+
+		chunkManager->Update(playerPosition);
 	}
 
 	void TestVoxel::OnUpdate(float deltaTime)
@@ -102,9 +101,7 @@ namespace test {
 		if (*(inputs + 5) == true)
 			camera.ProcessKeyboard(DOWN, deltaTime);
 
-		glm::vec3 pP = camera.GetPosition();
-		float playerPosition[3] = {pP[0], pP[1], pP[2]};
-		chunkManager->Update(playerPosition);
+		UpdateWorld();
 	}
 
 	void TestVoxel::OnRender()
@@ -113,41 +110,30 @@ namespace test {
 		lightPosition.x = 0;
 		lightPosition.z = 0;
 		lightPosition.y = 400;
-		/*
-		lightPosition.x = 200 *  cos(glfwGetTime() / 30);
-		lightPosition.z = 4 * 16 / 2;
-		lightPosition.y = 200 *sin(glfwGetTime() / 30);
-
-		lightColor[0] = std::min(std::max(4 * sin(glfwGetTime() / 30), 0.0), 1.0);
-		lightColor[1] = std::min(std::max(4 * sin(glfwGetTime() / 30), 0.0), 1.0);
-		lightColor[2] = std::min(std::max(4 * sin(glfwGetTime() / 30), 0.0), 1.0);
-		*/
 
 		// Render Chunks
+		glm::mat4 modelChunk = glm::mat4(1.0f);
+		glm::mat4 mvpChunk = proj * view * modelChunk;
+		chunkShader->Bind();
+		chunkShader->SetUniformMat4f("u_MVP", mvpChunk);
+
+		glm::vec3 camPos = camera.GetPosition();
+		chunkShader->SetUniform3f("u_viewPos", camPos.x, camPos.y, camPos.z);
+
+		chunkShader->SetUniform3f("u_lightColor", lightColor[0], lightColor[1], lightColor[2]);
+		chunkShader->SetUniform3f("u_lightPosition", lightPosition.x, lightPosition.y, lightPosition.z);
+		chunkShader->SetUniformMat4f("u_model", modelChunk);
+
 		for (int i = 0; i < chunkManager->activeChunks.size(); i++)
 		{
-			glm::mat4 modelChunk = glm::mat4(1.0f);
-			glm::mat4 mvpChunk = proj * view * modelChunk;
-			chunkShader->Bind();
-			chunkShader->SetUniformMat4f("u_MVP", mvpChunk);
-
-			glm::vec3 camPos = camera.GetPosition();
-			chunkShader->SetUniform3f("u_viewPos", camPos.x, camPos.y, camPos.z);
-
-			chunkShader->SetUniform3f("u_lightColor", lightColor[0], lightColor[1], lightColor[2]);
-			chunkShader->SetUniform3f("u_lightPosition", lightPosition.x, lightPosition.y, lightPosition.z);
-			chunkShader->SetUniformMat4f("u_model", modelChunk);
 			VertexArray* chunkVA;
 			int c;
 			chunkManager->activeChunks[i]->renderObject->GetRenderObjects(chunkVA, c);
 			renderer->Draw(*chunkVA, *chunkShader, c);
 		}
-
-		// Render Chunk
-
-		//renderer->Draw(*chunkVA, *chunkIB,*chunkShader);
-
+		
 		// Render Lighting
+
 		glm::mat4 modelLight = glm::mat4(1.0f);
 		modelLight = glm::translate(modelLight, lightPosition);
 		glm::mat4 mvpLight = proj * view * modelLight;

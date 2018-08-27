@@ -26,8 +26,8 @@ namespace voxelEngine {
 		int m_currentZ = 0;
 
 		Voxel m_pVoxels[s_SIZE][s_HEIGHT][s_SIZE];
-		void GenerateRenderData();
 		void ActiveNeighbours(int x, int y, int z, bool* values);
+		void GenerateRenderData();
 
 	public:
 
@@ -37,6 +37,7 @@ namespace voxelEngine {
 		~Chunk();
 
 		int Build();
+		bool built = false;
 		void GetPosition(int* position);
 		void Update(float delta);
 		int m_x, m_y, m_z;

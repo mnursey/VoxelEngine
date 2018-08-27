@@ -16,7 +16,7 @@ voxelEngine::Chunk::Chunk(int chunkX, int chunkY, int chunkZ, int seed)
 			}
 		}
 	}
-	
+	built = true;
 	GenerateRenderData();
 }
 
@@ -33,6 +33,9 @@ voxelEngine::Chunk::~Chunk()
 
 int voxelEngine::Chunk::Build()
 {
+	if (built)
+		return 1;
+
 	TerrainGenerator tGen(0);
 
 	int blocksBuilt = 0;
@@ -57,6 +60,7 @@ int voxelEngine::Chunk::Build()
 	}
 
 	GenerateRenderData();
+	built = true;
 	return 1;
 }
 

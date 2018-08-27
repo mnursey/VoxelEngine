@@ -1,5 +1,6 @@
 #pragma once
 
+#include <thread>
 #include "Test.h"
 #include "Shader.h"
 #include "VertexBuffer.h"
@@ -34,13 +35,15 @@ namespace test {
 		voxelEngine::ChunkManager* chunkManager;
 		GLFWwindow * m_window;
 
-		float lightColor[3] = { 1.0f, 1.0f, 1.0f};
+		float lightColor[3] = {1.0f, 1.0f, 1.0f};
 		glm::vec3 lightPosition = glm::vec3(-40.0f, 20.0f, -20.0f);
 
 		InputManager* inputManager;
 
 		glm::mat4 proj;
 		glm::mat4 view;
+
+		void UpdateWorld();
 
 	public:
 		TestVoxel();
@@ -50,5 +53,7 @@ namespace test {
 		void OnRender() override;
 		void OnImGuiRender() override;
 		void SetGLWindow(void * window) override;
+
+		bool m_Running;
 	};
 }
