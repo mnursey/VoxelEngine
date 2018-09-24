@@ -1,21 +1,21 @@
 #include "Chunk.h"
 
 voxelEngine::Chunk::Chunk(int chunkX, int chunkY, int chunkZ, int seed)
-	: m_x(chunkX), m_y(chunkY), m_z(chunkZ), m_seed(seed)
+	:m_x(chunkX), m_y(chunkY), m_z(chunkZ), m_seed(seed)
 {
-
-	TerrainGenerator tGen(0);
-
+	tGen = new voxelEngine::TerrainGenerator(0);
 	for (int x = 0; x < voxelEngine::Chunk::s_SIZE; x++)
 	{
 		for (int y = 0; y < voxelEngine::Chunk::s_HEIGHT; y++)
 		{
 			for (int z = 0; z < voxelEngine::Chunk::s_SIZE; z++)
 			{
-				m_pVoxels[x][y][z] = tGen.GetVoxelValue(x + chunkX * Chunk::s_SIZE, y + chunkY * Chunk::s_HEIGHT, z + chunkZ * Chunk::s_SIZE, chunkX, chunkZ);
+				m_pVoxels[x][y][z] = tGen->GetVoxelValue(x + chunkX * Chunk::s_SIZE, y + chunkY * Chunk::s_HEIGHT, z + chunkZ * Chunk::s_SIZE, chunkX, chunkZ);
 			}
 		}
 	}
+
+	delete tGen;
 	built = true;
 	GenerateRenderData();
 }
@@ -23,20 +23,20 @@ voxelEngine::Chunk::Chunk(int chunkX, int chunkY, int chunkZ, int seed)
 voxelEngine::Chunk::Chunk(int chunkX, int chunkY, int chunkZ, int seed, int blocksPerFrame)
 	: m_x(chunkX), m_y(chunkY), m_z(chunkZ), m_seed(seed), m_bpf(blocksPerFrame)
 {
-
+	tGen = new voxelEngine::TerrainGenerator(0);
 }
 
 voxelEngine::Chunk::~Chunk()
 {
 	delete renderObject;
+	if (!built)
+		delete tGen;
 }
 
 int voxelEngine::Chunk::Build()
 {
 	if (built)
 		return 1;
-
-	TerrainGenerator tGen(0);
 
 	int blocksBuilt = 0;
 
@@ -46,7 +46,7 @@ int voxelEngine::Chunk::Build()
 		{
 			for (; m_currentZ < voxelEngine::Chunk::s_SIZE; m_currentZ++)
 			{
-				m_pVoxels[m_currentX][m_currentY][m_currentZ] = tGen.GetVoxelValue(m_currentX + m_x * Chunk::s_SIZE, m_currentY + m_y * Chunk::s_HEIGHT, m_currentZ + m_z * Chunk::s_SIZE, m_x, m_z);
+				m_pVoxels[m_currentX][m_currentY][m_currentZ] = tGen->GetVoxelValue(m_currentX + m_x * Chunk::s_SIZE, m_currentY + m_y * Chunk::s_HEIGHT, m_currentZ + m_z * Chunk::s_SIZE, m_x, m_z);
 				blocksBuilt++;
 				if (blocksBuilt >= m_bpf)
 				{
@@ -58,10 +58,37 @@ int voxelEngine::Chunk::Build()
 		}
 		m_currentY = 0;
 	}
+	
+	delete tGen;
 
 	GenerateRenderData();
 	built = true;
 	return 1;
+}
+
+void voxelEngine::Chunk::BuildComplete()
+{
+	if (built)
+		return;
+
+	tGen = new voxelEngine::TerrainGenerator(0);
+
+	for (int x = 0; x < voxelEngine::Chunk::s_SIZE; x++)
+	{
+		for (int y = 0; y < voxelEngine::Chunk::s_HEIGHT; y++)
+		{
+			for (int z = 0; z < voxelEngine::Chunk::s_SIZE; z++)
+			{
+				m_pVoxels[x][y][z] = tGen->GetVoxelValue(x + m_x * Chunk::s_SIZE, y +  m_y * Chunk::s_HEIGHT, z + m_z * Chunk::s_SIZE, m_x, m_z);
+			}
+		}
+	}
+
+	delete tGen;
+
+	//GenerateRenderData();
+	built = true;
+	return;
 }
 
 void voxelEngine::Chunk::GenerateRenderData()

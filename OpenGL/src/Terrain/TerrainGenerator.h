@@ -1,9 +1,16 @@
 #pragma once
+
+#ifndef TG_H
+#define TG_H
+
 #include "SimplexNoise.h"
 #include "Interpolation.h"
-#include "Chunk.h"
+#include "ChunkManager.h"
 
 namespace voxelEngine {
+
+	class Voxel;
+	class Chunk;
 
 	enum class ChunkType
 	{
@@ -18,6 +25,7 @@ namespace voxelEngine {
 
 	public:
 		TerrainGenerator(int seed);
+		TerrainGenerator();
 		~TerrainGenerator();
 
 		voxelEngine::Voxel GetVoxelValue(int x, int y, int z, int chunkX, int chunkZ);
@@ -26,6 +34,9 @@ namespace voxelEngine {
 
 	private:
 		int m_seed;
+		const int smoothValue = 4;
 	};
 
 }
+
+#endif

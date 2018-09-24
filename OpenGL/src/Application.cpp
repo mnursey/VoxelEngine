@@ -46,6 +46,10 @@ int main(void)
 
 	/* Create a windowed mode window and its OpenGL context */
 	window = glfwCreateWindow(windowWidth, windowHeight, "OpenGL ~ mnursey", NULL, NULL);
+
+	// Full Screen
+	//window = glfwCreateWindow(1920, 1080, "OpenGL ~ mnursey", glfwGetPrimaryMonitor(), NULL);
+
 	if (!window)
 	{
 		glfwTerminate();
@@ -66,7 +70,6 @@ int main(void)
 	std::cout << "OpenGL Version: "<< glGetString(GL_VERSION) << std::endl;
 	
 	{
-
 		GLCall(glEnable(GL_BLEND));
 		GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 

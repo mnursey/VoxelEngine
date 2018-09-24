@@ -6,6 +6,12 @@ voxelEngine::TerrainGenerator::TerrainGenerator(int seed)
 
 }
 
+voxelEngine::TerrainGenerator::TerrainGenerator()
+	:m_seed(0)
+{
+
+}
+
 voxelEngine::TerrainGenerator::~TerrainGenerator()
 {
 
@@ -13,8 +19,9 @@ voxelEngine::TerrainGenerator::~TerrainGenerator()
 
 voxelEngine::Voxel voxelEngine::TerrainGenerator::GetVoxelValue(int x, int y, int z, int chunkX, int chunkZ)
 {
+
 	// Get Chunk Type
-	int chunkType = GetVoxelTerrainType(x, y ,z);
+	int chunkType = GetVoxelTerrainType(x, y, z);
 
 	double height = 0;
 
@@ -38,8 +45,7 @@ voxelEngine::Voxel voxelEngine::TerrainGenerator::GetVoxelValue(int x, int y, in
 	if (y > (int)height)
 		bt = voxelEngine::BlockType_Air;
 
-
-	return voxelEngine::Voxel(bt, x, y, z,   height / 100 - 0.06 - ((int)height % 4) * 0.02);
+	return voxelEngine::Voxel(bt, x, y, z, (float)(height / 100 - 0.06 - ((int)height % 4) * 0.02));
 }
 
 double voxelEngine::TerrainGenerator::GetHeight(int x, int z)
@@ -53,8 +59,6 @@ double voxelEngine::TerrainGenerator::GetHeight(int x, int z)
 
 	int chunkType = GetVoxelTerrainType(x, 1, z);
 	
-	int smoothValue = 4;
-
 	double height = 1.0;
 	double amplitude[3];
 	double frequency[3];
@@ -89,13 +93,13 @@ double voxelEngine::TerrainGenerator::GetHeight(int x, int z)
 	}
 	else
 	{
-		double northSouth[2] = { (z / smoothValue) * smoothValue + (smoothValue * nZ) , (z / smoothValue) * smoothValue };
-		double eastWest[2] = { (x / smoothValue) * smoothValue + (smoothValue * nX), (x / smoothValue) * smoothValue };
+		double northSouth[2] = { (double)((z / smoothValue) * smoothValue + (smoothValue * nZ)) , (double)((z / smoothValue) * smoothValue) };
+		double eastWest[2] = { (double)((x / smoothValue) * smoothValue + (smoothValue * nX)), (double)((x / smoothValue) * smoothValue) };
 
 		double xP = (x % smoothValue) / (smoothValue * 1.0) * nX;
 		double zP = (z % smoothValue) / (smoothValue * 1.0) * nZ;
 
-		height = binterpolate(GetHeight(eastWest[1], northSouth[0]), GetHeight(eastWest[0], northSouth[0]), GetHeight(eastWest[1], northSouth[1]), GetHeight(eastWest[0], northSouth[1]), xP, zP);
+		height = binterpolate(GetHeight((int)eastWest[1], (int)northSouth[0]), GetHeight((int)eastWest[0], (int)northSouth[0]), GetHeight((int)eastWest[1], (int)northSouth[1]), GetHeight((int)eastWest[0], (int)northSouth[1]), xP, zP);
 		return height;
 	}
 }
