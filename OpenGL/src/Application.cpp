@@ -46,6 +46,10 @@ int main(void)
 
 	/* Create a windowed mode window and its OpenGL context */
 	window = glfwCreateWindow(windowWidth, windowHeight, "OpenGL ~ mnursey", NULL, NULL);
+
+	// Full Screen
+	//window = glfwCreateWindow(1920, 1080, "OpenGL ~ mnursey", glfwGetPrimaryMonitor(), NULL);
+
 	if (!window)
 	{
 		glfwTerminate();
@@ -63,10 +67,9 @@ int main(void)
 		std::cout << "Error! GLEW Failure" << std::endl;
 
 	/* Print OpenGL Version to console */
-	std::cout << "OpenGL Version: "<< glGetString(GL_VERSION) << std::endl;
-	
-	{
+	std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
 
+	{
 		GLCall(glEnable(GL_BLEND));
 		GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
@@ -125,7 +128,7 @@ int main(void)
 				currentTest->OnImGuiRender();
 				ImGui::End();
 			}
-			
+
 			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
 			ImGui::Render();

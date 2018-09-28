@@ -1,21 +1,21 @@
 #include "Chunk.h"
 
 voxelEngine::Chunk::Chunk(int chunkX, int chunkY, int chunkZ, int seed)
-	: m_x(chunkX), m_y(chunkY), m_z(chunkZ), m_seed(seed)
+	:m_x(chunkX), m_y(chunkY), m_z(chunkZ), m_seed(seed)
 {
-
-	TerrainGenerator tGen(0);
-
+	tGen = new voxelEngine::TerrainGenerator(0);
 	for (int x = 0; x < voxelEngine::Chunk::s_SIZE; x++)
 	{
 		for (int y = 0; y < voxelEngine::Chunk::s_HEIGHT; y++)
 		{
 			for (int z = 0; z < voxelEngine::Chunk::s_SIZE; z++)
 			{
-				m_pVoxels[x][y][z] = tGen.GetVoxelValue(x + chunkX * Chunk::s_SIZE, y + chunkY * Chunk::s_HEIGHT, z + chunkZ * Chunk::s_SIZE, chunkX, chunkZ);
+				m_pVoxels[x][y][z] = tGen->GetVoxelValue(x + chunkX * Chunk::s_SIZE, y + chunkY * Chunk::s_HEIGHT, z + chunkZ * Chunk::s_SIZE, chunkX, chunkZ);
 			}
 		}
 	}
+
+	delete tGen;
 	built = true;
 	GenerateRenderData();
 }
@@ -23,20 +23,20 @@ voxelEngine::Chunk::Chunk(int chunkX, int chunkY, int chunkZ, int seed)
 voxelEngine::Chunk::Chunk(int chunkX, int chunkY, int chunkZ, int seed, int blocksPerFrame)
 	: m_x(chunkX), m_y(chunkY), m_z(chunkZ), m_seed(seed), m_bpf(blocksPerFrame)
 {
-
+	tGen = new voxelEngine::TerrainGenerator(0);
 }
 
 voxelEngine::Chunk::~Chunk()
 {
 	delete renderObject;
+	if (!built)
+		delete tGen;
 }
 
 int voxelEngine::Chunk::Build()
 {
 	if (built)
 		return 1;
-
-	TerrainGenerator tGen(0);
 
 	int blocksBuilt = 0;
 
@@ -46,7 +46,7 @@ int voxelEngine::Chunk::Build()
 		{
 			for (; m_currentZ < voxelEngine::Chunk::s_SIZE; m_currentZ++)
 			{
-				m_pVoxels[m_currentX][m_currentY][m_currentZ] = tGen.GetVoxelValue(m_currentX + m_x * Chunk::s_SIZE, m_currentY + m_y * Chunk::s_HEIGHT, m_currentZ + m_z * Chunk::s_SIZE, m_x, m_z);
+				m_pVoxels[m_currentX][m_currentY][m_currentZ] = tGen->GetVoxelValue(m_currentX + m_x * Chunk::s_SIZE, m_currentY + m_y * Chunk::s_HEIGHT, m_currentZ + m_z * Chunk::s_SIZE, m_x, m_z);
 				blocksBuilt++;
 				if (blocksBuilt >= m_bpf)
 				{
@@ -59,9 +59,36 @@ int voxelEngine::Chunk::Build()
 		m_currentY = 0;
 	}
 
+	delete tGen;
+
 	GenerateRenderData();
 	built = true;
 	return 1;
+}
+
+void voxelEngine::Chunk::BuildComplete()
+{
+	if (built)
+		return;
+
+	tGen = new voxelEngine::TerrainGenerator(0);
+
+	for (int x = 0; x < voxelEngine::Chunk::s_SIZE; x++)
+	{
+		for (int y = 0; y < voxelEngine::Chunk::s_HEIGHT; y++)
+		{
+			for (int z = 0; z < voxelEngine::Chunk::s_SIZE; z++)
+			{
+				m_pVoxels[x][y][z] = tGen->GetVoxelValue(x + m_x * Chunk::s_SIZE, y + m_y * Chunk::s_HEIGHT, z + m_z * Chunk::s_SIZE, m_x, m_z);
+			}
+		}
+	}
+
+	delete tGen;
+
+	//GenerateRenderData();
+	built = true;
+	return;
 }
 
 void voxelEngine::Chunk::GenerateRenderData()
@@ -77,7 +104,7 @@ void voxelEngine::Chunk::GenerateRenderData()
 			for (int z = 0; z < s_SIZE; z++)
 			{
 				Voxel* current = &m_pVoxels[x][y][z];
-				bool neighbours[6] = {false, false, false, false, false, false};
+				bool neighbours[6] = { false, false, false, false, false, false };
 				ActiveNeighbours(x, y, z, neighbours);
 				if (current->GetVoxelType() != 0)
 				{
@@ -90,15 +117,15 @@ void voxelEngine::Chunk::GenerateRenderData()
 							for (int v = 0; v < 6; v++)
 							{
 								// Positions
-								vertices[m_vertexCount * 10] =     VOXEL_POSITIONS[face * 36 + v * 6] + (x * Voxel::s_VOXEL_SIZE) + (m_x * s_SIZE) - s_SIZE / 2;
+								vertices[m_vertexCount * 10] = VOXEL_POSITIONS[face * 36 + v * 6] + (x * Voxel::s_VOXEL_SIZE) + (m_x * s_SIZE) - s_SIZE / 2;
 								vertices[m_vertexCount * 10 + 1] = VOXEL_POSITIONS[face * 36 + v * 6 + 1] + (y * Voxel::s_VOXEL_SIZE) + (m_y * s_SIZE);
 								vertices[m_vertexCount * 10 + 2] = VOXEL_POSITIONS[face * 36 + v * 6 + 2] + (z * Voxel::s_VOXEL_SIZE) + (m_z * s_SIZE) - s_SIZE / 2;
-								
+
 								vertices[m_vertexCount * 10 + 3] = Block_Colors[current->GetVoxelType()][0] + current->m_moisture;
 								vertices[m_vertexCount * 10 + 4] = Block_Colors[current->GetVoxelType()][1] + current->m_moisture;
 								vertices[m_vertexCount * 10 + 5] = Block_Colors[current->GetVoxelType()][2] + current->m_moisture;
 								vertices[m_vertexCount * 10 + 6] = Block_Colors[current->GetVoxelType()][3];
-								
+
 								// Normals
 								vertices[m_vertexCount * 10 + 7] = VOXEL_POSITIONS[face * 36 + v * 6 + 3];
 								vertices[m_vertexCount * 10 + 8] = VOXEL_POSITIONS[face * 36 + v * 6 + 4];

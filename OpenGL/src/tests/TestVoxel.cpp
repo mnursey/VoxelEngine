@@ -1,6 +1,7 @@
 #include "TestVoxel.h"
 
 #include "Renderer.h"
+//#include "Frustum.h"
 #include "imgui/imgui.h"
 #include <iostream>
 
@@ -9,7 +10,6 @@ namespace test {
 	TestVoxel::TestVoxel()
 	{
 		m_Running = true;
-		proj = glm::perspective(glm::radians(60.0f) , 960.0f / 540.0f, 0.1f, 10000.0f);
 
 		// Chunk
 
@@ -85,10 +85,10 @@ namespace test {
 			}
 		}
 
-		if(m_lockMouse)
+		if (m_lockMouse)
 			camera.MouseInput(MOUSE_X, MOUSE_Y);
 
-		if(*inputs == true)
+		if (*inputs == true)
 			camera.ProcessKeyboard(FORWARD, deltaTime);
 		if (*(inputs + 1) == true)
 			camera.ProcessKeyboard(BACKWARD, deltaTime);
@@ -106,10 +106,15 @@ namespace test {
 
 	void TestVoxel::OnRender()
 	{
+		proj = glm::perspective(glm::radians(60.0f), 960.0f / 540.0f, 0.1f, 10000.0f);
+
 		view = camera.GetViewMatrix();
 		lightPosition.x = 0;
 		lightPosition.z = 0;
 		lightPosition.y = 400;
+
+		// Create view frustum
+		//Frustum frustum = Frustum(proj * view);
 
 		// Render Chunks
 		glm::mat4 modelChunk = glm::mat4(1.0f);
@@ -124,14 +129,20 @@ namespace test {
 		chunkShader->SetUniform3f("u_lightPosition", lightPosition.x, lightPosition.y, lightPosition.z);
 		chunkShader->SetUniformMat4f("u_model", modelChunk);
 
-		for (int i = 0; i < chunkManager->activeChunks.size(); i++)
+		for (unsigned int i = 0; i < chunkManager->activeChunks.size(); i++)
 		{
-			VertexArray* chunkVA;
-			int c;
-			chunkManager->activeChunks[i]->renderObject->GetRenderObjects(chunkVA, c);
-			renderer->Draw(*chunkVA, *chunkShader, c);
+			int pos[3];
+			chunkManager->activeChunks[i]->GetPosition(pos);
+
+			//if (frustum.FrustumCulling(glm::vec3(pos[0], pos[1], pos[2]), voxelEngine::Chunk::s_SIZE * voxelEngine::Voxel::s_VOXEL_SIZE))
+			{
+				VertexArray* chunkVA;
+				int c;
+				chunkManager->activeChunks[i]->renderObject->GetRenderObjects(chunkVA, c);
+				renderer->Draw(*chunkVA, *chunkShader, c);
+			}
 		}
-		
+
 		// Render Lighting
 
 		glm::mat4 modelLight = glm::mat4(1.0f);
