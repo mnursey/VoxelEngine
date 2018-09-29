@@ -13,12 +13,12 @@
 #define FRUSTUM_UP		4
 #define FRUSTUM_DOWN	5
 
-class Frustum {
+class CFrustum {
 
 	Plane planes[6];
 
 public:
-	Frustum(glm::mat4 proj);
+	CFrustum(glm::mat4 proj);
 
 	bool FrustumCulling(glm::vec3 point, float r);
 };

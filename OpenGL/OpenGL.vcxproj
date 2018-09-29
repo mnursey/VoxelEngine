@@ -180,7 +180,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\Application.cpp" />
+    <ClCompile Include="src\Misc\CFrustum.cpp" />
     <ClCompile Include="src\Misc\Interpolation.cpp" />
+    <ClCompile Include="src\Misc\Plane.cpp" />
     <ClCompile Include="src\Noise\SimplexNoise.cpp" />
     <ClCompile Include="src\Render\Camera.cpp" />
     <ClCompile Include="src\Render\RenderObject.cpp" />
@@ -330,7 +332,9 @@
     <None Include="src\vendor\glm\gtx\wrap.inl" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Misc\CFrustum.h" />
     <ClInclude Include="src\Misc\Interpolation.h" />
+    <ClInclude Include="src\Misc\Plane.h" />
     <ClInclude Include="src\Noise\SimplexNoise.h" />
     <ClInclude Include="src\Render\Camera.h" />
     <ClInclude Include="src\Render\RenderObject.h" />

@@ -1,7 +1,7 @@
 #include "TestVoxel.h"
 
 #include "Renderer.h"
-//#include "Frustum.h"
+#include "CFrustum.h"
 #include "imgui/imgui.h"
 #include <iostream>
 
@@ -114,7 +114,7 @@ namespace test {
 		lightPosition.y = 400;
 
 		// Create view frustum
-		//Frustum frustum = Frustum(proj * view);
+		CFrustum frustum = CFrustum(proj * view);
 
 		// Render Chunks
 		glm::mat4 modelChunk = glm::mat4(1.0f);
@@ -134,7 +134,7 @@ namespace test {
 			int pos[3];
 			chunkManager->activeChunks[i]->GetPosition(pos);
 
-			//if (frustum.FrustumCulling(glm::vec3(pos[0], pos[1], pos[2]), voxelEngine::Chunk::s_SIZE * voxelEngine::Voxel::s_VOXEL_SIZE))
+			if (frustum.FrustumCulling(glm::vec3(pos[0], pos[1], pos[2]), voxelEngine::Chunk::s_SIZE * voxelEngine::Voxel::s_VOXEL_SIZE))
 			{
 				VertexArray* chunkVA;
 				int c;
