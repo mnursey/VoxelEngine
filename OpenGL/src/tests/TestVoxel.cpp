@@ -134,7 +134,7 @@ namespace test {
 			int pos[3];
 			chunkManager->activeChunks[i]->GetPosition(pos);
 
-			if (frustum.FrustumCulling(glm::vec3(pos[0], pos[1], pos[2]), voxelEngine::Chunk::s_SIZE * voxelEngine::Voxel::s_VOXEL_SIZE))
+			if (frustum.FrustumCulling(glm::vec3(pos[0] * voxelEngine::Chunk::s_SIZE, pos[1] * voxelEngine::Chunk::s_SIZE, pos[2] * voxelEngine::Chunk::s_SIZE), voxelEngine::Chunk::s_SIZE * voxelEngine::Voxel::s_VOXEL_SIZE * 1.25))
 			{
 				VertexArray* chunkVA;
 				int c;
